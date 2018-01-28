@@ -101,12 +101,23 @@ function initialState() {
     ];
 }
 
+//source::Fisher-Yates shuffle algo : https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm
+function shuffle(array) {
+    for (let i = array.length; i > 0; i--) {
+        const j = Math.floor(Math.random() * i--);
+        const temp = array[i];
+        array[i] = array[j];
+        array[j] = temp;
+    }
+    return array;
+}
+
 class MemoryGame extends React.Component {
     constructor(props) {
         super(props);
         this.reset = this.reset.bind(this);
         this.state = {
-            tiles: initialState(),
+            tiles: shuffle(initialState()),
             openTile: -1,
             matches: 0,
             clicks: 0,
@@ -177,7 +188,7 @@ class MemoryGame extends React.Component {
     }
     reset() {
         this.setState({
-            tiles: initialState(),
+            tiles: shuffle(initialState()),
             openTile: -1,
             matches: 0,
             clicks: 0,
