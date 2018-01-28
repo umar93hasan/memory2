@@ -4,3 +4,19 @@
 
 .side { padding: 4ex; text-align: center; }
 h1 { text-align: center; }
+
+.square {
+  border: 1px solid #999;
+  font-size: 24px;
+  font-weight: bold;
+  line-height: 34px;
+  height: 55px;
+  width: 55px;
+  margin-right: -1px;
+  margin-top: -1px;
+  text-align: center;
+}
+
+.large-text{
+  font-size: 25px;
+}
