@@ -2,8 +2,8 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import {Button} from 'reactstrap';
 
-export default function run_demo(root) {
-    ReactDOM.render( < MemoryGame / > , root);
+export default function game_init(root, channel) {
+    ReactDOM.render( < MemoryGame channel={channel} /> , root);
 }
 
 function Tile(props) {
@@ -17,160 +17,54 @@ function Tile(props) {
     );
 }
 
-function initialState() {
-    return [{
-            value: 'G',
-            display: false,
-            done: false
-        },
-        {
-            value: 'F',
-            display: false,
-            done: false
-        },
-        {
-            value: 'D',
-            display: false,
-            done: false
-        },
-        {
-            value: 'H',
-            display: false,
-            done: false
-        },
-        {
-            value: 'A',
-            display: false,
-            done: false
-        },
-        {
-            value: 'B',
-            display: false,
-            done: false
-        },
-        {
-            value: 'E',
-            display: false,
-            done: false
-        },
-        {
-            value: 'D',
-            display: false,
-            done: false
-        },
-        {
-            value: 'G',
-            display: false,
-            done: false
-        },
-        {
-            value: 'E',
-            display: false,
-            done: false
-        },
-        {
-            value: 'H',
-            display: false,
-            done: false
-        },
-        {
-            value: 'A',
-            display: false,
-            done: false
-        },
-        {
-            value: 'B',
-            display: false,
-            done: false
-        },
-        {
-            value: 'C',
-            display: false,
-            done: false
-        },
-        {
-            value: 'F',
-            display: false,
-            done: false
-        },
-        {
-            value: 'C',
-            display: false,
-            done: false
-        },
-    ];
-}
-
-//source::Fisher-Yates shuffle algo : https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm
-function shuffle(array) {
-    for (let i = array.length; i > 0; i--) {
-        const j = Math.floor(Math.random() * i--);
-        const temp = array[i];
-        array[i] = array[j];
-        array[j] = temp;
-    }
-    return array;
-}
-
 class MemoryGame extends React.Component {
     constructor(props) {
         super(props);
+        this.channel = props.channel;
         this.reset = this.reset.bind(this);
         this.state = {
-            tiles: shuffle(initialState()),
+            tiles: [{value: '', display: false, done: false},{value: '', display: false, done: false},{value: '', display: false, done: false},{value: '', display: false, done: false},{value: '', display: false, done: false},{value: '', display: false, done: false},{value: '', display: false, done: false},{value: '', display: false, done: false},{value: '', display: false, done: false},{value: '', display: false, done: false},{value: '', display: false, done: false},{value: '', display: false, done: false},{value: '', display: false, done: false},{value: '', display: false, done: false},{value: '', display: false, done: false},{value: '', display: false, done: false}],
             openTile: -1,
             matches: 0,
             clicks: 0,
             clickDisable: false
         };
+
+        this.channel.join()
+          .receive("ok", this.gotView.bind(this))
+          .receive("error", resp => { console.log("Unable to join", resp) });
     }
 
 
+  gotView(view) {
+    this.setState(view.game);
+  }
+
 
     handleClick(i) {
+
+
         if (!this.state.clickDisable && !this.state.tiles[i].display) {
             if (this.state.openTile == -1) {
-                var tiles = this.state.tiles;
-                tiles[i].display = true;
-                var clicks = this.state.clicks + 1;
-                this.setState({
-                    tiles: tiles,
-                    openTile: i,
-                    clicks: clicks
-                });
+                this.channel.push("firstTile",{tile: i})
+                  .receive("ok", this.gotView.bind(this))
             } else if (i != this.state.openTile) {
                 if (this.state.tiles[i].value == this.state.tiles[this.state.openTile].value) {
-                    var tiles = this.state.tiles;
-                    var matches = this.state.matches + 1;
-                    tiles[i].display = true;
-                    tiles[i].done = true;
-                    tiles[this.state.openTile].done = true;
-                    var clicks = this.state.clicks + 1;
-                    this.setState({
-                        tiles: tiles,
-                        openTile: -1,
-                        matches: matches,
-                        clicks: clicks
-                    });
+                    this.channel.push("tileMatch",{tile: i})
+                        .receive("ok", this.gotView.bind(this))
                 } else {
                     var tiles = this.state.tiles;
                     var clicks = this.state.clicks + 1;
                     var openTile = this.state.openTile;
                     tiles[i].display = true;
-                    setTimeout(() => {
-                        tiles[i].display = false;
-                        tiles[openTile].display = false;
-                        this.setState({
-                            tiles: tiles,
-                            openTile: -1,
-                            clicks: clicks,
-                            clickDisable: false
-                        });
-                    }, 1000);
                     this.setState({
                         tiles: tiles,
                         clickDisable: true
                     });
+                    setTimeout(() => {
+                        this.channel.push("tileMismatch",{tile: openTile})
+                            .receive("ok", this.gotView.bind(this))
+                    }, 1000);
                 }
 
             }
@@ -187,13 +81,8 @@ class MemoryGame extends React.Component {
         );
     }
     reset() {
-        this.setState({
-            tiles: shuffle(initialState()),
-            openTile: -1,
-            matches: 0,
-            clicks: 0,
-            clickDisable: false
-        });
+      this.channel.push("reset")
+        .receive("ok", this.gotView.bind(this));
     }
     render() {
         var label = "Moves";
