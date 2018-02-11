@@ -81,8 +81,9 @@ class MemoryGame extends React.Component {
         );
     }
     reset() {
-      this.channel.push("reset")
-        .receive("ok", this.gotView.bind(this));
+      if (!this.state.clickDisable)
+        this.channel.push("reset")
+          .receive("ok", this.gotView.bind(this));
     }
     render() {
         var label = "Moves";
